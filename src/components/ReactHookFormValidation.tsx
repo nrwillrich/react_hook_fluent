@@ -35,19 +35,22 @@ export const ReactHookFormValidation: FC = () => {
   >();
 
   const comboboxItems: IComboBoxOption[] = [
-    { key: "A", text: "Option A" },
-    { key: "B", text: "Option B" },
-    { key: "C", text: "Option C" },
-    { key: "D", text: "Option D" }
+    { key: "A", text: "Pessoa física" },
+    { key: "B", text: "Pessoa física estrangeiro" },
+    { key: "C", text: "MEI" },
+    { key: "D", text: "Simples nacional" },
+    { key: "E", text: "Lucro real" },
+    { key: "F", text: "Lucro presumido" },
+    { key: "G", text: "Lucro arbitrado" }
   ];
 
-  const { handleSubmit, control, setValue } = useForm<Form, any>({
+  const { handleSubmit, control, setValue, getValues } = useForm<Form, any>({
     defaultValues: {
       name: "",
       email: "",
       datePicker: null
     },
-    reValidateMode: "onSubmit",
+    reValidateMode: "onChange",
     mode: "all"
   });
 
@@ -67,13 +70,101 @@ export const ReactHookFormValidation: FC = () => {
     )();
   };
 
+  function vercpf(cpf) {
+    if (
+      cpf.length != 11 ||
+      cpf == "00000000000" ||
+      cpf == "11111111111" ||
+      cpf == "22222222222" ||
+      cpf == "33333333333" ||
+      cpf == "44444444444" ||
+      cpf == "55555555555" ||
+      cpf == "66666666666" ||
+      cpf == "77777777777" ||
+      cpf == "88888888888" ||
+      cpf == "99999999999"
+    )
+      return false;
+
+    let add = 0;
+    let i = 0;
+    let rev = 0;
+
+    for (i = 0; i < 9; i++) add += parseInt(cpf.charAt(i)) * (10 - i);
+    rev = 11 - (add % 11);
+
+    if (rev == 10 || rev == 11) rev = 0;
+    if (rev != parseInt(cpf.charAt(9))) return false;
+
+    add = 0;
+    for (i = 0; i < 10; i++) add += parseInt(cpf.charAt(i)) * (11 - i);
+    rev = 11 - (add % 11);
+    if (rev == 10 || rev == 11) rev = 0;
+    if (rev != parseInt(cpf.charAt(10))) return false;
+
+    return true;
+  }
+
+  function verCNPJ(cnpj: string) {
+    cnpj = cnpj.replace(/[^\d]+/g, "");
+
+    if (cnpj === "") return false;
+
+    if (cnpj.length != 14) return false;
+
+    // Elimina CNPJs invalidos conhecidos
+    if (
+      cnpj === "00000000000000" ||
+      cnpj === "11111111111111" ||
+      cnpj === "22222222222222" ||
+      cnpj === "33333333333333" ||
+      cnpj === "44444444444444" ||
+      cnpj === "55555555555555" ||
+      cnpj === "66666666666666" ||
+      cnpj === "77777777777777" ||
+      cnpj === "88888888888888" ||
+      cnpj === "99999999999999"
+    )
+      return false;
+
+    // Valida DVs
+    let tamanho = cnpj.length - 2;
+    let numeros = cnpj.substring(0, tamanho);
+    let digitos = cnpj.substring(tamanho);
+    let soma: number = 0;
+    let pos = tamanho - 7;
+    let i = 0;
+
+    for (i = tamanho; i >= 1; i--) {
+      soma += numeros.charAt(tamanho - i) * pos--;
+      if (pos < 2) pos = 9;
+    }
+    let resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+    if (resultado != digitos.charAt(0)) return false;
+
+    tamanho = tamanho + 1;
+    numeros = cnpj.substring(0, tamanho);
+    soma = 0;
+    pos = tamanho - 7;
+
+    for (i = tamanho; i >= 1; i--) {
+      soma += numeros.charAt(tamanho - i) * pos--;
+      if (pos < 2) pos = 9;
+    }
+
+    resultado = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+    if (resultado != digitos.charAt(1)) return false;
+
+    return true;
+  }
+
   return (
     <div>
       <div style={{ margin: "10px" }}>
         <h3>This sample uses native react-hook-form rules</h3>
         <ControlledTextField
           required={true}
-          label="This is required field"
+          label="Documento"
           control={control}
           name={nameof<Form>("name")}
           rules={{ required: "This field is required" }}
@@ -119,14 +210,26 @@ export const ReactHookFormValidation: FC = () => {
             name={nameof<Form>("asyncValidate")}
             rules={{
               validate: async (value) => {
-                setValidating(true);
-                await sleep(500);
-                setValidating(false);
-                if (value === "spfx") {
-                  return true;
+                if (getValues("combobox") === "A") {
+                  if (value) {
+                    if (value && vercpf(value)) {
+                      return true;
+                    } else {
+                      return "CPF inválido";
+                    }
+                  }
+                  return "Preencha CPF";
+                } else if (getValues("combobox") === "E") {
+                  if (value) {
+                    if (value && verCNPJ(value)) {
+                      return true;
+                    } else {
+                      return "CNPJ inválido";
+                    }
+                  }
+                  return "Preencha CNPJ";
                 }
-
-                return "type 'spfx' to pass the validation";
+                return "Escolha outra opção";
               }
             }}
           />
