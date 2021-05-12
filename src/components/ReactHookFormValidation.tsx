@@ -6,23 +6,15 @@ import {
 } from "office-ui-fabric-react";
 import { FC, useState } from "react";
 import { DeepMap, FieldError, useForm } from "react-hook-form";
-import { ControlledTextField } from "../fluent-rhf/ControlledTextField";
-import { ControlledDatePicker } from "../fluent-rhf/ControlledDatePicker";
 import { ControlledCombobox } from "../fluent-rhf/ControlledCombobox";
-import { ControlledDropdown } from "../fluent-rhf/ControlledDropdown";
 import { nameof, sleep } from "../utils";
 import { ControlledTextFieldAsync } from "../fluent-rhf/ControlledTextFieldAsync";
 
 type Form = {
   name: string;
-  email: string;
-  minMaxNumber: number;
   asyncValidate: string;
   multiCustomValidation: string;
-  datePicker: Date;
-  minDate: Date;
   combobox: string;
-  dropdown: string;
 };
 
 // fields - required checkbox, combobox, dropdown, textfield, datetimepicker
@@ -46,9 +38,7 @@ export const ReactHookFormValidation: FC = () => {
 
   const { handleSubmit, control, setValue, getValues } = useForm<Form, any>({
     defaultValues: {
-      name: "",
-      email: "",
-      datePicker: null
+      name: ""
     },
     reValidateMode: "onChange",
     mode: "all"
@@ -73,16 +63,16 @@ export const ReactHookFormValidation: FC = () => {
   function vercpf(cpf) {
     if (
       cpf.length != 11 ||
-      cpf == "00000000000" ||
-      cpf == "11111111111" ||
-      cpf == "22222222222" ||
-      cpf == "33333333333" ||
-      cpf == "44444444444" ||
-      cpf == "55555555555" ||
-      cpf == "66666666666" ||
-      cpf == "77777777777" ||
-      cpf == "88888888888" ||
-      cpf == "99999999999"
+      cpf === "00000000000" ||
+      cpf === "11111111111" ||
+      cpf === "22222222222" ||
+      cpf === "33333333333" ||
+      cpf === "44444444444" ||
+      cpf === "55555555555" ||
+      cpf === "66666666666" ||
+      cpf === "77777777777" ||
+      cpf === "88888888888" ||
+      cpf === "99999999999"
     )
       return false;
 
@@ -160,76 +150,43 @@ export const ReactHookFormValidation: FC = () => {
 
   return (
     <div>
-      <div style={{ margin: "10px" }}>
-        <h3>This sample uses native react-hook-form rules</h3>
-        <ControlledTextField
-          required={true}
-          label="Documento"
-          control={control}
-          name={nameof<Form>("name")}
-          rules={{ required: "This field is required" }}
-        />
-
-        <ControlledTextField
-          required={true}
-          label="This field is required and accepts only emails"
-          control={control}
-          name={nameof<Form>("email")}
-          rules={{
-            pattern: {
-              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-              message: "This is not a valid email address"
-            },
-            required: "This field is required"
-          }}
-        />
-
-        <ControlledTextField
-          label="This field accepts only numbers between 0-10"
-          control={control}
-          name={nameof<Form>("minMaxNumber")}
-          type="number"
-          rules={{
-            min: {
-              message: "Minimum value is 0",
-              value: 0
-            },
-            max: {
-              message: "Maximum value is 10",
-              value: 10
-            },
-            valueAsNumber: true
-          }}
-        />
-
+      <div style={{ margin: "15px" }}>
         <div>
+          <ControlledCombobox
+            required={true}
+            options={comboboxItems}
+            label="Regime tributação"
+            control={control}
+            name={nameof<Form>("combobox")}
+            placeholder="Select a value"
+            rules={{ required: "Escolha o regime" }}
+          />
+
           <ControlledTextFieldAsync
-            label="Async validation, pases validation if value is 'spfx'. Validates only on button click"
+            required={true}
+            label="Documento"
             control={control}
             setValue={setValue}
             name={nameof<Form>("asyncValidate")}
             rules={{
               validate: async (value) => {
                 if (getValues("combobox") === "A") {
-                  if (value) {
-                    if (value && vercpf(value)) {
-                      return true;
-                    } else {
-                      return "CPF inválido";
-                    }
+                  if (vercpf(value)) {
+                    return true;
+                  } else {
+                    return value ? "CPF inválido" : "Campo requerido";
                   }
-                  return "Preencha CPF";
-                } else if (getValues("combobox") === "E") {
-                  if (value) {
-                    if (value && verCNPJ(value)) {
-                      return true;
-                    } else {
-                      return "CNPJ inválido";
-                    }
+                } else if (
+                  getValues("combobox") !== "A" &&
+                  getValues("combobox") !== "B"
+                ) {
+                  if (value && verCNPJ(value)) {
+                    return true;
+                  } else {
+                    return "CNPJ inválido";
                   }
-                  return "Preencha CNPJ";
                 }
-                return "Escolha outra opção";
+                return "Campo requerido";
               }
             }}
           />
@@ -249,67 +206,9 @@ export const ReactHookFormValidation: FC = () => {
             />
           )}
         </div>
-        <ControlledTextField
-          label="This field uses different validation rules - '1' and '0' are not accepted in this input"
-          control={control}
-          name={nameof<Form>("multiCustomValidation")}
-          rules={{
-            validate: {
-              notOne: (value) =>
-                value !== "1" || '"1" is not a valid value here',
-              notZero: (value) =>
-                value !== "0" || '"0" is not a valid value here'
-            }
-          }}
-        />
 
-        <ControlledDatePicker
-          isRequired={true}
-          label="This is a required date picker"
-          control={control}
-          name={nameof<Form>("datePicker")}
-          rules={{ required: "Date is required" }}
-        />
-
-        <ControlledDatePicker
-          isRequired={true}
-          minDate={new Date()}
-          label="This date picker requires a min date to be greater than today"
-          control={control}
-          name={nameof<Form>("minDate")}
-          rules={{
-            required: "Date is required",
-            validate: (data: string) => {
-              return (
-                new Date(data) > new Date() ||
-                "The date should be greater than today"
-              );
-            }
-          }}
-        />
-
-        <ControlledCombobox
-          required={true}
-          options={comboboxItems}
-          label="This is a required combobox"
-          control={control}
-          name={nameof<Form>("combobox")}
-          placeholder="Select a value"
-          rules={{ required: "Please select a value" }}
-        />
-
-        <ControlledDropdown
-          required={true}
-          options={comboboxItems}
-          label="This is a required dropdown"
-          control={control}
-          name={nameof<Form>("dropdown")}
-          placeholder="Select a value"
-          rules={{ required: "Please select a value" }}
-        />
-
-        <div style={{ padding: "10px 0", textAlign: "center" }}>
-          <PrimaryButton onClick={onSave} text="Save" />
+        <div style={{ padding: "10px 0", textAlign: "left" }}>
+          <PrimaryButton onClick={onSave} text="Salvar" />
         </div>
 
         {validationError && (
